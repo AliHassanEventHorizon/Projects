@@ -12,7 +12,12 @@ const io = socketIo(server, {
         origin: "*",
     },
 });
-
+app.get('/index', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+  });
+  app.get('/index2', (req, res) => {
+    res.sendFile(__dirname + '/index2.html');
+  });
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
