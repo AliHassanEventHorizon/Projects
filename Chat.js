@@ -1,15 +1,19 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const http = require("http"); // Import http module
 const socketIo = require("socket.io");
 const app = express();
 const cors = require('cors');
-const io = socketIo(app, {
+
+// Create an http.Server instance and pass it to Socket.IO
+const server = http.createServer(app);
+const io = socketIo(server, {
     cors: {
-        origin: "*", 
+        origin: "*",
     },
 });
 
-app.use(cors()); 
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -42,7 +46,7 @@ io.on("connection", (socket) => {
 
 const port = process.env.PORT || 3000;
 
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
     console.log("Server is listening");
 });
