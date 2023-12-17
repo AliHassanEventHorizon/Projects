@@ -17,14 +17,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 
-app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/index.html");
-});
-
-app.get("/index2", (req, res) => {
-    res.sendFile(__dirname + "/index2.html");
-});
-
 let messageforward = ""
 let seacondcomming = ""
 io.on("connection", (socket) => {
