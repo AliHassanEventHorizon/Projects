@@ -19,6 +19,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 let messageforward = "";
 let seacondcomming = "";
+app.get('/', (req, res) => {
+    res.send('Hello, world!');
+});
 
 io.on("connection", (socket) => {
     socket.on("transferControl", (data) => {
