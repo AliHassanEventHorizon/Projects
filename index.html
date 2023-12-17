@@ -1,0 +1,80 @@
+<body>
+  <div class="container">
+      <textarea id="message" rows="4" cols="50" placeholder="Text Message"></textarea>
+      <input type="button" value="Send" id="Send">
+      <textarea id="recived" rows="4" cols="50" placeholder="Replies" readonly></textarea>
+      <div class="toggle-container">
+          <label class="toggle-label">Toggle:</label>
+          <input type="checkbox" id="toggleSwitch">
+      </div>
+  </div>
+
+  </body>
+<script src="https://code.responsivevoice.org/responsivevoice.js?"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
+
+<style>
+  body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+  }
+  .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+  }
+  #send {
+    width: 150px;
+    height: 50px;
+  }
+  #message,  #recived {
+      width: 300px;
+      height: 100px;
+      margin-bottom: 16px; /* Adjusted margin */
+  }
+  #Send, #recived {
+      position: relative;
+      top: -20px; /* Adjusted top value */
+  }
+  .toggle-container {
+      display: flex;
+      align-items: center;
+  }
+  .toggle-label {
+      margin-right: 8px;
+  }
+</style>
+<script>
+  let recived = document.getElementById("recived");
+ 
+  const socket = io("ws://localhost:3000");
+  let num = 1;
+  let num2 = 1;
+  document.getElementById("Send").onclick = () => {
+
+    let text = document.getElementById("message").value;
+    if (text){
+    
+    socket.emit("transferControl", { Messagedata: text });
+    recived.value += "Your Message" + " " + num2 + ":" + " " + text + "\n";
+    }
+ 
+  };
+
+  socket.on("Horizonresponse", (data) => {
+    if (data.message !== "") {
+      let text2 = data.seacondsignal;
+  
+
+      recived.value += "Message" + " " + num + ":" + " " + text2 + "\n";
+      num++;
+      responsiveVoice.speak(text2);
+    }
+
+  });
+</script>
