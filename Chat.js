@@ -1,10 +1,10 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const http = require("http"); // Import http module
+const http = require("http"); 
 const socketIo = require("socket.io");
 const app = express();
 const cors = require('cors');
-
+const home = require("./routes/home")
 
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -19,9 +19,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 let messageforward = "";
 let seacondcomming = "";
-app.get('/', (req, res) => {
-    res.send('Hello, world!');
-});
+app.use('/home', home)
 
 io.on("connection", (socket) => {
     socket.on("transferControl", (data) => {
