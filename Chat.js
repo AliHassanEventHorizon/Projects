@@ -1,25 +1,24 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const http = require("http"); // Import http module
+const http = require("http");
 const socketIo = require("socket.io");
+const port = process.env.PORT || 3000;
 const app = express();
 const cors = require('cors');
-
-// Create an http.Server instance and pass it to Socket.IO
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: "*",
+        origin: "*", 
     },
 });
 
-app.use(cors());
+app.use(cors()); 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-let messageforward = "";
-let seacondcomming = "";
 
+let messageforward = ""
+let seacondcomming = ""
 io.on("connection", (socket) => {
     socket.on("transferControl", (data) => {
         let receivedData = data.Messagedata;
@@ -44,9 +43,7 @@ io.on("connection", (socket) => {
     });
 });
 
-const port = process.env.PORT || 3000;
-
 server.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-    console.log("Server is listening");
+  console.log(`Server running at http://localhost:${port}`);
+  console.log("Server is listening");
 });
