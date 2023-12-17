@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const socketIo = require("socket.io");
 const app = express();
+let port = process.env.PORT || 4000;
 const cors = require('cors');
 const io = socketIo(app, {
     cors: {
@@ -38,5 +39,6 @@ io.on("connection", (socket) => {
             seacondcomming = "";
         }
     });
+    app.listen(port)
 });
 
