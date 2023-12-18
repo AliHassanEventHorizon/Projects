@@ -13,7 +13,7 @@ const io = socketIo(app, {
   },
 });
 
-router.get("/Server", (req, res) => {
+router.get("/Text", (req, res) => {
     io.on("connection", (socket) => {
         console.log("A user connected");
       
@@ -33,6 +33,6 @@ router.get("/Server", (req, res) => {
       });
 });
 
-
+app.use("/.netlify/functions/api",router)
 
 module.exports.handler = serverless(app);
