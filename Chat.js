@@ -2,7 +2,7 @@ const express = require("express");
 const socketIo = require("socket.io");
 const cors = require('cors');
 const serverless = require('serverless-http');
-
+const router = express.Router()
 const app = express();
 app.use(cors());
 
@@ -13,7 +13,7 @@ const io = socketIo(app, {
   },
 });
 
-app.get("/Server", (req, res) => {
+router.get("/Server", (req, res) => {
     io.on("connection", (socket) => {
         console.log("A user connected");
       
