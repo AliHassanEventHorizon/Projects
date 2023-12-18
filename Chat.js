@@ -1,53 +1,40 @@
 const express = require("express");
-const bodyParser = require("body-parser");
-const http = require("http"); 
 const socketIo = require("socket.io");
-const app = express();
 const cors = require('cors');
+const serverless = require('serverless-http');
 
-
-const server = http.createServer(app);
-const io = socketIo(server, {
-    cors: {
-        origin: "*",
-    },
-});
-
+const app = express();
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
-let messageforward = "";
-let seacondcomming = "";
+// Attach Socket.IO directly to the app
+const io = socketIo(app, {
+  cors: {
+    origin: "*",
+  },
+});
 
+app.get("/", (req, res) => {
+  res.send("Hello, serverless!");
+});
 
+// Handle WebSocket connections
 io.on("connection", (socket) => {
-    socket.on("transferControl", (data) => {
-        let receivedData = data.Messagedata;
-        messageforward = receivedData;
+  console.log("A user connected");
 
-        if (messageforward != "") {
-            console.log("First Signal", messageforward);
-            io.emit("Transmission", { firstsignal: messageforward });
-            messageforward = "";
-        }
-    });
+  socket.on("transferControl", (data) => {
+    const receivedData = data.Messagedata;
+    console.log("First Signal", receivedData);
 
-    socket.on("CalltotheHorizon", (data) => {
-        let HorzonSignal = data.Seacondmessagedata;
-        seacondcomming = HorzonSignal;
+    io.emit("Transmission", { firstsignal: receivedData });
+  });
 
-        if (seacondcomming != "") {
-            console.log("Seacond Signal", seacondcomming);
-            io.emit("Horizonresponse", { seacondsignal: seacondcomming });
-            seacondcomming = "";
-        }
-    });
+  socket.on("CalltotheHorizon", (data) => {
+    const HorizonSignal = data.Seacondmessagedata;
+    console.log("Seacond Signal", HorizonSignal);
+
+    io.emit("Horizonresponse", { seacondsignal: HorizonSignal });
+  });
 });
 
-const port = process.env.PORT || 3000;
-
-server.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-    console.log("Server is listening");
-});
+// Convert the app to a serverless function
+module.exports.handler = serverless(app);
