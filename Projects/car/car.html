@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #game-container {
+            background-color: #87CEEB; /* Sky Blue */
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #car {
+            width: 50px;
+            height: 30px;
+            background-color: #ff0000; /* Red */
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="car"></div>
+    </div>
+    <script>
+        const car = document.getElementById('car');
+        let carPosition = 50; // Initial position of the car
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'd') {
+                moveCar(5); // Move the car to the right
+            } else if (event.key === 'a') {
+                moveCar(-5); // Move the car to the left
+            }
+        });
+
+        function moveCar(distance) {
+            carPosition += distance;
+            car.style.left = `${carPosition}%`;
+
+            // Check if the car reaches the end of the track
+            if (carPosition >= 100) {
+                alert('Congratulations! You completed the track!');
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            carPosition = 50;
+            car.style.left = `${carPosition}%`;
+        }
+    </script>
+</body>
+</html>
