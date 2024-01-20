@@ -2,20 +2,24 @@ import socketio
 import threading
 import keyboard
 import os
+import pyautogui
 from gradientai import Gradient
 os.environ['GRADIENT_ACCESS_TOKEN'] = "xGiWYLUTu5gAtKpyp8JQA5mwxTzPk4Vj"
 os.environ['GRADIENT_WORKSPACE_ID'] = "fbb16996-6d4e-40e4-b971-e68a83f80e60_workspace"
 from pynput import keyboard
-import mss
 import logging
 from PIL import Image
 from manga_ocr import MangaOcr
 import eventlet
-import pyautogui
+import mss
 import socketio
-mocr = MangaOcr()
-sio = socketio.Server()
+sio = socketio.Server(cors_allowed_origins='*')
 app = socketio.WSGIApp(sio)
+cli = socketio.Client()
+mocr = MangaOcr()
+with Gradient() as gradient:
+ base = gradient.get_base_model(base_model_slug="nous-hermes2")
+cli.connect('http://localhost:5000')
 
 x1 = 0
 y1 = 0
@@ -43,31 +47,31 @@ def server():
 
 
 def process_screenshots():
-
     with mss.mss() as sct:
-     sct.shot(output="screenshot1.png")
+      sct.shot(output="cap.png")
+
     
 
     try:
         roi = (x1, y1, x2, y2)
-        print(roi)
         print("First Screenshot Taken")
-        screenshot_pil = Image.open("screenshot1.png")
-        cropped_screenshot = screenshot_pil.crop(roi)
-        japanese = mocr(cropped_screenshot)
-        os.remove("screenshot1.png")
+        screenshot_pil1 = Image.open("cap.png")
+        screenshot = screenshot_pil1.crop(roi)
+        gray = screenshot.convert("L")
+        japanese = mocr(gray)
+        os.remove("cap.png")
         print("Text traslated")
-        with Gradient() as gradient:
-         base = gradient.get_base_model(base_model_slug="nous-hermes2")
-         system_prompt = "Translate the Japanese text into English"
-         prompt = japanese
-         templated_query = f"<s>### Instruction:\n{system_prompt}\n\n###Input:\n{prompt}\n\n### Response:\n"
-         response = base.complete(query=templated_query, max_generated_token_count=200)
-         print(f"> {prompt}\n> {response.generated_output}\n\n")
-         extracted_text = response.generated_output
+
+         
+        system_prompt = "Translate the japanese text into English"
+        prompt = japanese
+        templated_query = f"<s>### Instruction:\n{system_prompt}\n\n###Input:\n{prompt}\n\n### Response:\n"
+        response = base.complete(query=templated_query, max_generated_token_count=200)
+        print(f"> {prompt}\n> {response.generated_output}\n\n")
+        extracted_text = response.generated_output
         if extracted_text:
-          data = {'message': extracted_text }
-          sio.emit('transferControl', data)   
+         cli.emit('transferControl', {'message': extracted_text})
+ 
          
          
     except Exception as e:
