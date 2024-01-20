@@ -13,6 +13,7 @@ from manga_ocr import MangaOcr
 import eventlet
 import pyautogui
 import socketio
+mocr = MangaOcr()
 sio = socketio.Server()
 app = socketio.WSGIApp(sio)
 
@@ -51,7 +52,6 @@ def process_screenshots():
         roi = (x1, y1, x2, y2)
         print(roi)
         print("First Screenshot Taken")
-        mocr = MangaOcr()
         screenshot_pil = Image.open("screenshot1.png")
         cropped_screenshot = screenshot_pil.crop(roi)
         japanese = mocr(cropped_screenshot)
