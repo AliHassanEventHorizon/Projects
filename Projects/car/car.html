@@ -30,15 +30,42 @@ body{
             left: 40px;
  
         }
+        #apply {
+            position: absolute;
+            top: 0px;
+            left: 80px;
+ 
+        }
 </style>
 <body>
     <canvas class="canvas" id="canvas"></canvas>
     <input type="button" id="save" value="Save">
     <input type="button" id="discard" value="discard">
+    <input type="button" id="apply" value="apply">
 
 </body>
 </html>
 <script>
+    tf.setBackend("cpu")
+function save() {
+
+    let score = best.brain.getWeights();
+
+
+    for (let i = 1; i < cars.length; i++) {
+        let mutatedWeights = mutateWeights(score);
+        console.log(mutatedWeights)
+        cars[i].brain.setWeights(mutatedWeights);
+    }
+}
+function randomGaussian() {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random(); // Converting [0,1) to (0,1)
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+
 const canvas = document.getElementById("canvas")
 canvas.width = window.innerWidth
 let forward = false
@@ -46,6 +73,8 @@ let left = false
 let right = false
 let back = false
 
+    
+let best
 document.onkeydown = function(event){
     switch(event.key) {
         case 'd':
@@ -88,9 +117,12 @@ const ctx = canvas.getContext("2d")
 const cars = [];
 function generateCars(count) {
 
-    const brain = createNeuralNetwork([10, 6, 4]);
-
- 
+   for(i =0;i<count; i++) {
+let model = tf.sequential();
+        model.add(tf.layers.dense({ units: 8, inputDim: 5, activation: "tanh" }));
+        model.add(tf.layers.dense({ units: 4, activation: "sigmoid" }));
+       // model.compile({ loss: 'binaryCrossentropy', optimizer: 'adam'});
+        
     cars.push({
     carx:100,
     cary:500,
@@ -102,30 +134,44 @@ function generateCars(count) {
     angle:0,
     acc:0.2,
     damaged:false,
-    brain:brain 
-            
+    brain:model,
+    fitness:0
+      
         });
   
     }
+}
 
-
+let mod
 generateCars(100);
 
-let bestCarY = cars[0]
+let bestCar = cars[0]
 
 document.getElementById("save").onclick=function(){
-    save()
+    
 }
 document.getElementById("discard").onclick=function(){
-    discard()
+ mod = best.brain.getWeights();
+}
+document.getElementById("apply").onclick=function(){
+
+ for(i = 0;i<cars.length;i++){
+ cars[i].brain.setWeights(mod)
+ }
 }
 
 
-
-
+let state
 function update(car){
- 
-   if(forward == true){
+    if (!car.damaged){
+    pre = car.brain.predict(state).dataSync();
+    car.speed+=0.5 *pre[0]
+    car.speed-=0.1 *pre[1]
+    car.angle -= 0.08 *pre[2]
+    car.angle += 0.08 *pre[3]
+    car.maxspeed =5
+    }
+    if(forward == true){
    car.speed+=car.acc
    }
    if(back == true){
@@ -160,16 +206,14 @@ function update(car){
   car.carx -= Math.sin(car.angle) * car.speed;
    car.cary -= Math.cos(car.angle) * car.speed;
    if (car.damaged == true) {
-        prevCarX = 100
-        prevCarY = 500
-        prevangle = 0,
-        car.carx = prevCarX;
-        car.cary = prevCarY;
-        car.angle = prevangle
+    car.maxspeed =0
+   car.speed = 0
+     
     }
    
    }
    let borders = [];
+  
    function draw(){
     ctx.lineWidth = 4
     ctx.beginPath()
@@ -262,7 +306,10 @@ outerBottomdown = {x:endXout4, y:endYout4}
     }
 
     function createpolygon(car){
-        
+    
+
+
+      
         const points = []
         const rad = Math.hypot(car.carwidth,car.carheight)/2
         const alpha = Math.atan2(car.carwidth,car.carheight)
@@ -310,14 +357,14 @@ outerBottomdown = {x:endXout4, y:endYout4}
 
     return null;
 }
-
+document.getElementById("save").value=0 
 
 function sensors(car) {
-    raycount = 10;
+    raycount = 5;
     let readings = [];
     raylength = 200;
-    rayspread = Math.PI / 1;
-    rays = [];
+    rayspread = Math.PI / 1
+        rays = [];
 
     for (let i = 0; i < raycount; i++) {
         const rayAngle = lerp(
@@ -357,19 +404,14 @@ function sensors(car) {
         );
     
     }
-    const brain = createNeuralNetwork([raycount, 6, 4]);
+   
 const offsets = readings.map(
     s => s == null ? 0 : 1 - s.offset
 );
+state = tf.tensor2d([offsets]);
 
-const outputs = brain.feedForward(offsets);
 
-    if(outputs){
-    forward=outputs[0]
-    left=outputs[1]
-    right=outputs[2]
-    back=outputs[3]
-}
+
 
 
 
@@ -415,74 +457,13 @@ const outputs = brain.feedForward(offsets);
 }
 
 
-function createNeuralNetwork(neuronCounts) {
-    const levels = [];
-    for (let i = 0; i < neuronCounts.length - 1; i++) {
-        levels.push(createLevel(neuronCounts[i], neuronCounts[i + 1]));
-    }
 
-    return {
-        levels,
 
-        feedForward(givenInputs) {
-            let outputs = feedForwardLevel(givenInputs, this.levels[0]);
-            for (let i = 1; i < this.levels.length; i++) {
-                outputs = feedForwardLevel(outputs, this.levels[i]);
-            }
-            return outputs;
-        },
-    };
-}
 
-function createLevel(inputCount, outputCount) {
-    const level = {
-        inputs: new Array(inputCount),
-        outputs: new Array(outputCount),
-        biases: new Array(outputCount),
-        weights: [],
-    };
 
-    for (let i = 0; i < inputCount; i++) {
-        level.weights[i] = new Array(outputCount);
-    }
 
-    randomize(level);
 
-    return level;
-}
 
-function randomize(level) {
-    for (let i = 0; i < level.inputs.length; i++) {
-        for (let j = 0; j < level.outputs.length; j++) {
-            level.weights[i][j] = Math.random() * 2 - 1;
-        }
-    }
-
-    for (let i = 0; i < level.biases.length; i++) {
-        level.biases[i] = Math.random() * 2 - 1;
-    }
-}
-
-function feedForwardLevel(givenInputs, level) {
-    for (let i = 0; i < level.inputs.length; i++) {
-        level.inputs[i] = givenInputs[i];
-    }
-
-    for (let i = 0; i < level.outputs.length; i++) {
-        let sum = 0;
-        for (let j = 0; j < level.inputs.length; j++) {
-            sum += level.inputs[j] * level.weights[j][i];
-        }
-
-        if (sum > level.biases[i]) {
-            level.outputs[i] = 1;
-        } else {
-            level.outputs[i] = 0;
-        }
-    }
-
-    return level.outputs;
-}
 
 
 function lerp(start, end, t) {
@@ -519,26 +500,23 @@ function damaged(points) {
     }
     return false;
 }
-function save(){
-    const minCarX = cars.reduce((min, car) => (car.carx < min ? car.carx : min), Infinity);
-        const minCarY = cars.reduce((min, car) => (car.cary < min ? car.cary : min), Infinity);
-
-        const bestCarX = cars.find((car) => car.carx === minCarX);
-        const bestCarY = cars.find((car) => car.cary === minCarY);
-        if (bestCarY) {
-                localStorage.setItem("bestbrain", JSON.stringify(bestCarY.brain));
-                console.log(bestCarY.brain);
-            } else {
-                console.error("Unable to save best brain to local storage. No valid brain found.");
-            }
-        
-
-}
-function discard(){
-    localStorage.removeItem("bestbrain")
+let l = false
+function areAllCarsDamaged() {
+    for (let i = 0; i < cars.length; i++) {
+        if (!cars[i].damaged) {
+            return false;
+        }
+    }
+    if(l = true){
+        return true;
+    }
+    return true;
 }
  
-
+function calculateFitness(car) {
+   
+    return car.carx - car.cary;
+}
  
     function animate() {  
         clearCanvas();
@@ -546,11 +524,10 @@ function discard(){
         draw()
 
         for (let o=0;o<cars.length;o++){
-        const minCarX = cars.reduce((min, car) => (car.carx < min ? car.carx : min), Infinity);
-        const minCarY = cars.reduce((min, car) => (car.cary < min ? car.cary : min), Infinity);
-
-        const bestCarX = cars.find((car) => car.carx === minCarX);
-        const bestCarY = cars.find((car) => car.cary === minCarY);
+        cars[o].fitness = cars[o].carx - cars[o].cary;
+        let bestCar = cars.reduce((max, car) => car.fitness > max.fitness ? car : max, cars[0]);
+        best = bestCar
+        sensors(bestCar)
             update(cars[o]);
             const points = createpolygon(cars[o])
             ctx.beginPath()
@@ -565,7 +542,8 @@ for (let i=1;i<points.length;i++)
 }
 if (damaged(points)) {
 ctx.fillStyle = "gray";
-cars[o].damaged = true 
+cars[o].damaged = true
+cars[o].fitness -= 1
 
 } else {
 ctx.fillStyle = "blue";  
@@ -575,18 +553,57 @@ cars[o].damaged = false
 
 ctx.fill()
 
-sensors(bestCarY)
+
+
 
         }
-         
 
+
+ 
+    
+        if (areAllCarsDamaged()) {
+    document.getElementById("save").value++;
+
+  prev = best.brain
+    let bestWeights = best.brain.getWeights();
+
+    for (let i = 0; i < cars.length; i++) {
+        let parentWeights = [];
+        cars[i].carx = 100;
+        cars[i].cary = 500;
+        cars[i].angle = 0;
+        function mutate(car){
+       const curr = best.brain.getWeights();
+       const mutatedweights = []
+        for(j=0;j<curr.length;j++){
+           
+            let tensor = curr[j];
+            let shape = curr[j].shape;
+            let values = tensor.dataSync().slice()
+            for(k=0;k<values.length;k++){
+                let w = values[k]
+                if(Math.random()* 2 - 1 >0.60){
+                    values[k]= w+randomGaussian()
+                }
+                
+            }
+            let newTensor = tf.tensor(values,shape)
+            mutatedweights[j] = newTensor
+            
+        }
+        car.brain.setWeights(mutatedweights)
+        
+        
+}
+mutate(cars[i])
+ 
+    }
+}
 
 
   
 
 
-
-      
 
 
         
