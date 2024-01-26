@@ -40,7 +40,7 @@ body{
 <body>
     <canvas class="canvas" id="canvas"></canvas>
     <input type="button" id="save" value="Save">
-    <input type="button" id="discard" value="discard">
+    <input type="button" id="discard" value="Save">
     <input type="button" id="apply" value="apply">
 
 </body>
@@ -119,7 +119,7 @@ function generateCars(count) {
 
    for(i =0;i<count; i++) {
 let model = tf.sequential();
-        model.add(tf.layers.dense({ units: 8, inputDim: 5, activation: "tanh" }));
+        model.add(tf.layers.dense({ units: 8, inputDim: 6, activation: "tanh" }));
         model.add(tf.layers.dense({ units: 4, activation: "sigmoid" }));
        // model.compile({ loss: 'binaryCrossentropy', optimizer: 'adam'});
         
@@ -129,7 +129,7 @@ let model = tf.sequential();
     carheight:50,
     carwidth:30,
     speed:0,
-    maxspeed:5,
+    maxspeed:10,
     friction:0.05,
     angle:0,
     acc:0.2,
@@ -142,7 +142,7 @@ let model = tf.sequential();
     }
 }
 
-let mod
+
 generateCars(100);
 
 let bestCar = cars[0]
@@ -151,12 +151,16 @@ document.getElementById("save").onclick=function(){
     
 }
 document.getElementById("discard").onclick=function(){
- mod = best.brain.getWeights();
+    const savePath = 'downloads://best_model';
+    best.brain.save(savePath)
+
 }
 document.getElementById("apply").onclick=function(){
 
  for(i = 0;i<cars.length;i++){
- cars[i].brain.setWeights(mod)
+    const savePath = 'downloads://best_model.json';
+    const loadedModel = tf.loadLayersModel(savePath);
+
  }
 }
 
@@ -165,7 +169,7 @@ let state
 function update(car){
     if (!car.damaged){
     pre = car.brain.predict(state).dataSync();
-    car.speed+=0.5 *pre[0]
+    car.speed+=0.3 *pre[0]
     car.speed-=0.1 *pre[1]
     car.angle -= 0.08 *pre[2]
     car.angle += 0.08 *pre[3]
@@ -360,7 +364,7 @@ outerBottomdown = {x:endXout4, y:endYout4}
 document.getElementById("save").value=0 
 
 function sensors(car) {
-    raycount = 5;
+    raycount = 6;
     let readings = [];
     raylength = 200;
     rayspread = Math.PI / 1
@@ -386,12 +390,12 @@ function sensors(car) {
         if (readings[i]) {
             end = readings[i].end;
         }
-        ctx.beginPath();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "yellow";
-        ctx.moveTo(rays[i].start.x, rays[i].start.y);
-        ctx.lineTo(end.x, end.y);
-        ctx.stroke();
+        //ctx.beginPath();
+        //ctx.lineWidth = 1;
+        //ctx.strokeStyle = "white";
+        //ctx.moveTo(rays[i].start.x, rays[i].start.y);
+        //ctx.lineTo(end.x, end.y);
+        //ctx.stroke();
 
   
   
@@ -527,7 +531,7 @@ function calculateFitness(car) {
         cars[o].fitness = cars[o].carx - cars[o].cary;
         let bestCar = cars.reduce((max, car) => car.fitness > max.fitness ? car : max, cars[0]);
         best = bestCar
-        sensors(bestCar)
+        sensors(cars[o])
             update(cars[o]);
             const points = createpolygon(cars[o])
             ctx.beginPath()
