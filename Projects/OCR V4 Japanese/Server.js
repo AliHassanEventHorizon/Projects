@@ -2,13 +2,13 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const http = require("http");
 const socketIo = require("socket.io");
-const ioClient = require('socket.io-client');
 const app = express();
 const server = http.createServer(app);
-const ioServer = socketIo(server); 
-
+const io = socketIo(server);
+const { translate } = require("deeplx");
 const port = 5000;
 let TextTransfer = "";
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -16,16 +16,23 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/Speak.html");
 });
 
-const socket = ioClient('http://localhost:3000'); 
-socket.on("transferControl", (data) => {
-  let postData = data.message;
-  TextTransfer = postData;
-  if (TextTransfer !== "") {
-    console.log(TextTransfer);
-    ioServer.emit("eventHorizon", { message: TextTransfer }); 
-    TextTransfer = "";
-  }
+
+io.on("connect", (socket) => {
+  socket.on("transferControl", (data) => {
+    let postData = data.message
+    TextTransfer = postData
+    if (TextTransfer != "") {
+      translate(TextTransfer, 'english', 'japanese')
+      .then(result => {
+      console.log(result);
+      io.emit("eventHorizon", { message: result });
+      TextTransfer = "";
+      })
+
+    }
+  });
 });
+
 
 server.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
