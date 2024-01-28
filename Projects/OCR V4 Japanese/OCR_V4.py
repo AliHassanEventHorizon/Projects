@@ -17,8 +17,7 @@ sio = socketio.Server(cors_allowed_origins='*')
 app = socketio.WSGIApp(sio)
 cli = socketio.Client()
 mocr = MangaOcr()
-with Gradient() as gradient:
- base = gradient.get_base_model(base_model_slug="nous-hermes2")
+import requests
 cli.connect('http://localhost:5000')
 
 x1 = 0
@@ -61,14 +60,7 @@ def process_screenshots():
         japanese = mocr(gray)
         os.remove("cap.png")
         print("Text traslated")
-
-         
-        system_prompt = "Translate the japanese text into English"
-        prompt = japanese
-        templated_query = f"<s>### Instruction:\n{system_prompt}\n\n###Input:\n{prompt}\n\n### Response:\n"
-        response = base.complete(query=templated_query, max_generated_token_count=200)
-        print(f"> {prompt}\n> {response.generated_output}\n\n")
-        extracted_text = response.generated_output
+        extracted_text = japanese
         if extracted_text:
          cli.emit('transferControl', {'message': extracted_text})
  
@@ -83,8 +75,3 @@ key_to_process = keyboard.KeyCode.from_char('w')
 with keyboard.Listener(on_press=lambda key: process_screenshots() if key == key_to_process else None) as listener:
     print(f"Press '{key_to_process}' to process screenshots. Press 'esc' to exit.")
     listener.join()
-
-
-
-
-
