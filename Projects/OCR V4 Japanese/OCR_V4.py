@@ -3,9 +3,6 @@ import threading
 import keyboard
 import os
 import pyautogui
-from gradientai import Gradient
-os.environ['GRADIENT_ACCESS_TOKEN'] = "xGiWYLUTu5gAtKpyp8JQA5mwxTzPk4Vj"
-os.environ['GRADIENT_WORKSPACE_ID'] = "fbb16996-6d4e-40e4-b971-e68a83f80e60_workspace"
 from pynput import keyboard
 import logging
 from PIL import Image
