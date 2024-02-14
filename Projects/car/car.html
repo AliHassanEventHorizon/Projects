@@ -119,9 +119,10 @@ function generateCars(count) {
 
    for(i =0;i<count; i++) {
 let model = tf.sequential();
-        model.add(tf.layers.dense({ units: 8, inputDim: 6, activation: "tanh" }));
+        model.add(tf.layers.dense({ units: 8,inputDim:6 ,activation: "relu" }));
         model.add(tf.layers.dense({ units: 4, activation: "sigmoid" }));
-       // model.compile({ loss: 'binaryCrossentropy', optimizer: 'adam'});
+        model.compile({ loss: 'meanSquaredError', optimizer: 'adam'});
+
         
     cars.push({
     carx:100,
@@ -129,7 +130,7 @@ let model = tf.sequential();
     carheight:50,
     carwidth:30,
     speed:0,
-    maxspeed:10,
+    maxspeed:5,
     friction:0.05,
     angle:0,
     acc:0.2,
@@ -141,40 +142,48 @@ let model = tf.sequential();
   
     }
 }
-
-
-generateCars(100);
-
-let bestCar = cars[0]
-
+generateCars(100)
 document.getElementById("save").onclick=function(){
     
 }
-document.getElementById("discard").onclick=function(){
-    const savePath = 'downloads://best_model';
-    best.brain.save(savePath)
 
-}
-document.getElementById("apply").onclick=function(){
+document.getElementById("discard").onclick = function () {
+   let model = best.brain.getWeights().dataSync()
+   console.log(model)
+};
 
- for(i = 0;i<cars.length;i++){
-    const savePath = 'downloads://best_model.json';
-    const loadedModel = tf.loadLayersModel(savePath);
 
- }
-}
+document.getElementById("apply").onclick = function () {
+
+};
+
+let critic = tf.sequential();
+        critic.add(tf.layers.dense({ units: 16,inputDim:10 ,activation: "relu" }));
+        critic.add(tf.layers.dense({ units: 4, activation: "sigmoid" }));
+        critic.compile({ loss: 'meanSquaredError', optimizer: 'adam'});
 
 
 let state
 function update(car){
-    if (!car.damaged){
-    pre = car.brain.predict(state).dataSync();
-    car.speed+=0.3 *pre[0]
-    car.speed-=0.1 *pre[1]
-    car.angle -= 0.08 *pre[2]
-    car.angle += 0.08 *pre[3]
+    prevfitness= car.fitness
+    net_state = state.arraySync()
+    const currentQValues = car.brain.predict(state).dataSync();
+    net_state[0].push(currentQValues[0],currentQValues[1],currentQValues[2],currentQValues[3])
+    net_state = tf.tensor2d(net_state)
+    let crit = critic.predict(net_state)
+    const result = crit.dataSync()
+    car.speed += result[0]
+    car.speed -= result[1]
+    car.angle -= result[2]
+    car.angle += result[3]
+
+    state.dispose()
+
     car.maxspeed =5
-    }
+    
+
+
+    
     if(forward == true){
    car.speed+=car.acc
    }
@@ -214,12 +223,12 @@ function update(car){
    car.speed = 0
      
     }
+}
    
-   }
    let borders = [];
   
    function draw(){
-    ctx.lineWidth = 4
+    ctx.lineWidth = 3
     ctx.beginPath()
     let startX = 200;
     let startY = 80;
@@ -412,7 +421,10 @@ function sensors(car) {
 const offsets = readings.map(
     s => s == null ? 0 : 1 - s.offset
 );
-state = tf.tensor2d([offsets]);
+
+    state = tf.tensor2d([offsets]);
+
+
 
 
 
@@ -568,8 +580,7 @@ ctx.fill()
         if (areAllCarsDamaged()) {
     document.getElementById("save").value++;
 
-  prev = best.brain
-    let bestWeights = best.brain.getWeights();
+    let bestWeights = critic.getWeights();
 
     for (let i = 0; i < cars.length; i++) {
         let parentWeights = [];
@@ -577,7 +588,10 @@ ctx.fill()
         cars[i].cary = 500;
         cars[i].angle = 0;
         function mutate(car){
-       const curr = best.brain.getWeights();
+            tf.tidy(() =>{
+
+            
+       const curr = critic.getWeights();
        const mutatedweights = []
         for(j=0;j<curr.length;j++){
            
@@ -595,9 +609,9 @@ ctx.fill()
             mutatedweights[j] = newTensor
             
         }
-        car.brain.setWeights(mutatedweights)
+        critic.setWeights(mutatedweights)
         
-        
+    })     
 }
 mutate(cars[i])
  
